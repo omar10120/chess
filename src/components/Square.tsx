@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 
 interface SquareProps {
   color: string;
@@ -41,13 +42,18 @@ export const Square: React.FC<SquareProps> = ({ color, piece, position, onClick,
         />
       )}
       {piece && (
-        <img
-          src={getPieceImage(piece)}
-          alt={`${piece} piece`}
-          className={`w-12 h-12 object-contain transition-transform hover:scale-110 relative z-10 
-            ${isSelected ? 'scale-105' : ''}`}
-          draggable={false}
-        />
+        <div className="relative w-12 h-12">
+          <Image
+            src={getPieceImage(piece)}
+            alt={`${piece} piece`}
+            fill
+            sizes="48px"
+            className={`object-contain transition-transform hover:scale-110 relative z-10 
+              ${isSelected ? 'scale-105' : ''}`}
+            priority
+            draggable={false}
+          />
+        </div>
       )}
     </div>
   );

@@ -34,81 +34,65 @@ interface ChessBoardRef {
 }
 
 export const ChessBoard = forwardRef<ChessBoardRef, ChessBoardProps>(({ onSquareClick, selectedSquare, validMoves }, ref) => {
-  const [board, setBoard] = useState(() => {
+  const [board, setBoard] = useState(initialBoard);
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedBoard = localStorage.getItem('chess_boardState');
-      return savedBoard ? JSON.parse(savedBoard) : initialBoard;
+      if (savedBoard) {
+        setBoard(JSON.parse(savedBoard));
+      }
     }
-    return initialBoard;
-  });
+  }, []);
 
   const [promotionDialog, setPromotionDialog] = useState<{
     visible: boolean;
     position: string;
     isWhite: boolean;
   }>({ visible: false, position: '', isWhite: false });
-
   const getSquareColor = (row: number, col: number): string => {
     return (row + col) % 2 === 0 ? 'bg-amber-100' : 'bg-amber-800';
   };
-
   const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
   const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
-
   const getPieceAt = (position: string) => {
     const file = files.indexOf(position[0]);
     const rank = ranks.indexOf(position[1]);
     if (file === -1 || rank === -1) return null;
     return board[rank][file];
   };
-
   const movePiece = (from: string, to: string) => {
     const fromFile = files.indexOf(from[0]);
     const fromRank = ranks.indexOf(from[1]);
     const toFile = files.indexOf(to[0]);
     const toRank = ranks.indexOf(to[1]);
-
     if (fromFile === -1 || fromRank === -1 || toFile === -1 || toRank === -1) return false;
-
     const piece = board[fromRank][fromFile];
     if (!piece) return false;
-
     if (!isValidMove(piece, from, to, board)) return false;
-
-    const newBoard = board.map((row: string[]) => [...row]);
+    const newBoard = board.map(row => [...row]);
+    newBoard[toRank][toFile] = piece;
     newBoard[fromRank][fromFile] = '';
-    
+
     // Check for pawn promotion
-    if (piece.toLowerCase() === 'p' && (toRank === 0 || toRank === 7)) {
-      // Clear the pawn from its original position
-      newBoard[fromRank][fromFile] = '';
-      setBoard(newBoard);
-      localStorage.setItem('chess_boardState', JSON.stringify(newBoard));
-      
+    if ((piece === 'P' && toRank === 0) || (piece === 'p' && toRank === 7)) {
       setPromotionDialog({
         visible: true,
         position: to,
-        isWhite: piece === piece.toUpperCase()
+        isWhite: piece === 'P'
       });
-      return true;
     }
 
-    newBoard[toRank][toFile] = piece;
     setBoard(newBoard);
     localStorage.setItem('chess_boardState', JSON.stringify(newBoard));
     return true;
   };
-
   const getValidMoves = (position: string): { [key: string]: boolean } => {
     const file = files.indexOf(position[0]);
     const rank = ranks.indexOf(position[1]);
     if (file === -1 || rank === -1) return {};
-
-    const piece = board[rank][file];
+  const piece = board[rank][file];
     if (!piece) return {};
-
-    const validMoves: { [key: string]: boolean } = {};
-    
+  const validMoves: { [key: string]: boolean } = {};
     for (let r = 0; r < 8; r++) {
       for (let f = 0; f < 8; f++) {
         const targetPos = `${files[f]}${ranks[r]}`;
@@ -118,10 +102,8 @@ export const ChessBoard = forwardRef<ChessBoardRef, ChessBoardProps>(({ onSquare
         }
       }
     }
-
-    return validMoves;
+  return validMoves;
   };
-
   useImperativeHandle(ref, () => ({
     getPieceAt,
     movePiece,
@@ -176,20 +158,16 @@ export const ChessBoard = forwardRef<ChessBoardRef, ChessBoardProps>(({ onSquare
       return false;
     }
   }));
-
   const handlePromotion = (promotedPiece: string) => {
     if (!promotionDialog.visible) return;
-
-    const toFile = files.indexOf(promotionDialog.position[0]);
+  const toFile = files.indexOf(promotionDialog.position[0]);
     const toRank = ranks.indexOf(promotionDialog.position[1]);
-    
     const newBoard = board.map((row: string[]) => [...row]);
     newBoard[toRank][toFile] = promotionDialog.isWhite ? promotedPiece.toUpperCase() : promotedPiece.toLowerCase();
     setBoard(newBoard);
     localStorage.setItem('chess_boardState', JSON.stringify(newBoard));
     setPromotionDialog({ visible: false, position: '', isWhite: false });
   };
-
   return (
     <div className="relative inline-block border-4 border-amber-900 rounded-lg shadow-2xl bg-gradient-to-br from-amber-50 to-amber-100 dark:from-gray-800 dark:to-gray-900 transform transition-all duration-300 hover:scale-[1.02]">
       {promotionDialog.visible && (
